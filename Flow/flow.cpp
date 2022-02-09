@@ -1,9 +1,17 @@
+#if defined(_WIN32) || defined(_WIN64)
+#include "Include/SFML/Audio.hpp"
+#include <Windows.h>
+#include "conio.h"
+#else
 #include <SFML/Audio.hpp>
-#include <iostream>
 #include <unistd.h>
+#include <ncurses.h>
+using namespace sf;
+#endif
+
+#include <iostream>
 //test
 using namespace std;
-using namespace sf;
 
 SoundBuffer bufferSample(string sample)
 {

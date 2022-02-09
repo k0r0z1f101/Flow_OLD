@@ -120,6 +120,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Users\wa\source\repos\Flow\Flow\Include\SFML;C:\Users\wa\source\repos\Flow\Flow\Include\SFML\System;C:\Users\wa\source\repos\Flow\Flow\Include\SFML\Graphics;C:\Users\wa\source\repos\Flow\Flow\Include\SFML\Window;C:\Users\wa\source\repos\Flow\Flow\Include\SFML\Audio;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

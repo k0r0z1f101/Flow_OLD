@@ -30,8 +30,15 @@ void clear_screen()
 
 SoundBuffer bufferSample(string sample)
 {
+	string soundfolder;
+#if defined(_WIN32) || defined(_WIN64)
+	soundfolder = "../../Sounds/";
+#else
+    // Assume POSIX
+	soundfolder = "../Sounds/";
+#endif
 	SoundBuffer buffer;
-	if(!buffer.loadFromFile(sample))
+	if(!buffer.loadFromFile(soundfolder+sample))
 		return buffer;
 	return buffer;
 }

@@ -1,25 +1,26 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include "Include/SFML/Audio.hpp"
+#include <SFML/Audio.hpp>
 #include <Windows.h>
 #include "conio.h"
 #else
 #include <SFML/Audio.hpp>
 #include <unistd.h>
 #include <ncurses.h>
-using namespace sf;
+#include <sys/time.h>
 #endif
 
 #include <chrono>
-#include <sys/time.h>
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
 //test
 using namespace std;
+using namespace sf;
+using namespace chrono;
 
 void clear_screen()
 {
-#ifdef WINDOWS
+#if defined(_WIN32) || defined(_WIN64)
     std::system("cls");
 #else
     // Assume POSIX
@@ -30,7 +31,7 @@ void clear_screen()
 SoundBuffer bufferSample(string sample)
 {
 	SoundBuffer buffer;
-	if(!buffer.loadFromFile("../Sounds/"+sample))
+	if(!buffer.loadFromFile(sample))
 		return buffer;
 	return buffer;
 }
@@ -45,14 +46,7 @@ Sound loadSample(SoundBuffer& buffer)
 
 time_t getMilliseconds()
 {
-	struct timeval time_now{};
-	gettimeofday(&time_now, nullptr);
-	time_t msecs_time = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
-
-//	cout << "seconds since epoch: " << time_now.tv_sec << endl;
-//	cout << "milliseconds since epoch: "  << msecs_time << endl << endl;
-//	cout << "nanoseconds since epoch: "  << (msecs_time * 1000) << endl << endl;
-	return msecs_time;
+	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 const float secsmins = 60.0f;
@@ -72,9 +66,7 @@ int main()
 	Sound sample2;
 	sample2 = loadSample(buffer2);
 
-	//int waitTime = rand()% 500000 + 50000;
-
-	float bpm = 60.0f;
+	float bpm = 120.0f;
 	int waitTime = int((secsmins / bpm) * 1000000.f);
 
 	int wait;
@@ -98,7 +90,6 @@ int main()
 			sample1.setPitch(pitch);
 			sample1.play();
 			sample2.play();
-			//usleep(waitTime);
 			++cmp;
 		}
 	}

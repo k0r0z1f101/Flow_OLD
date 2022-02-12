@@ -18,6 +18,11 @@ using namespace std;
 using namespace sf;
 using namespace chrono;
 
+//globales
+const float secsmins = 60.0f;
+const int barSize = 4;
+
+//fonction pour nettoyer l'écran cross-compatibility
 void clear_screen()
 {
 #if defined(_WIN32) || defined(_WIN64)
@@ -28,6 +33,7 @@ void clear_screen()
 #endif
 }
 
+//fonction pour charger un son dans le buffer
 SoundBuffer bufferSample(string sample)
 {
 	string soundfolder;
@@ -43,6 +49,7 @@ SoundBuffer bufferSample(string sample)
 	return buffer;
 }
 
+//fonction pour charger le buffer dans un Sound object
 Sound loadSample(SoundBuffer& buffer)
 {
 	Sound sample;
@@ -51,29 +58,39 @@ Sound loadSample(SoundBuffer& buffer)
 	return sample;
 }
 
+//fonction pour avoir le temps en millisecondes depuis Epoch
 time_t getMilliseconds()
 {
 	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-const float secsmins = 60.0f;
-
-void playSample2(time_t startTime, int beatTime, int& sample2NextStep, time_t currentTime, float bpm, int bpmCmp, Sound& sample2, array<int,32> sample2Bar,  int& sample2BarPlayed)
+//fonction pour avancer dans la trame du sample2 et jouer ou pas le son
+void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int bpmCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false)
 {
-	if(sample2Bar[sample2BarPlayed] == 1)
+	cout << "*****Sample*****" << endl;
+	cout << startTime << endl << beatTime << endl;
+	cout << "step: " << sampleBarPlayed << endl;
+	cout << "sampleNextStep: \t" << sampleNextStep << endl;
+	cout << "really is: " << "\t\t" << currentTime << endl;
+	cout << "bpm: " << bpm << ", bar: " << (bpmCmp + 1) << endl;
+	if(pitch) sample.setPitch(0.0f + float((rand() % 501)/100));
+	if(sampleBar[sampleBarPlayed] == 1)
 	{
-		cout << "*****Sample 2*****" << endl;
-		cout << startTime << endl << beatTime << endl;
-		cout << "supposed to be: " << ((startTime * 1000) + ((bpmCmp + 1) * beatTime)) << endl;
-		cout << "really is: " << "\t" << currentTime << endl;
-		cout << "difference: " << (((startTime * 1000) + ((bpmCmp + 1) * beatTime)) - currentTime) << endl;
-		cout << "bpm: " << bpm << ", bar: " << (bpmCmp + 1) << endl;
-		sample2.stop();
-		sample2.play();
+		sample.stop();
+		sample.play();
 	}
-	++sample2BarPlayed;
-	sample2BarPlayed = sample2BarPlayed >= 32 ? 0 : sample2BarPlayed;
-	sample2NextStep += (beatTime - (32 - sample2BarPlayed));
+	++sampleBarPlayed;
+	sampleBarPlayed = sampleBarPlayed >= barSize ? 0 : sampleBarPlayed;
+	sampleNextStep += (beatTime / barSize);
+}
+
+//fonction de départ pour randomiser un bar de sample
+void buildSampleBar(array<int,barSize>& sampleBar)
+{
+	for(int i = 0;i < barSize;++i)
+	{
+		sampleBar[i] = rand() % 2;
+	}
 }
 
 int main()
@@ -81,19 +98,24 @@ int main()
 	time_t startTime = getMilliseconds();
 	srand(int(time(0)));
 
-	SoundBuffer buffer;
-	buffer = bufferSample("Sine_wave_440.ogg");
+	SoundBuffer buffer1;
+	buffer1 = bufferSample("Sine_wave_440.ogg");
 	Sound sample1;
-	sample1 = loadSample(buffer);
+	sample1 = loadSample(buffer1);
+	time_t sample1NextStep = 0;
 
 	SoundBuffer buffer2;
 	buffer2 = bufferSample("kick-hip-hop-punchy-3.wav");
 	Sound sample2;
 	sample2 = loadSample(buffer2);
-	int sample2NextStep = 0;
+	time_t sample2NextStep = 0;
 
 	//test array for 1 bar of sample2 (kick drum)
-	array<int,32> sample2Bar = { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	array<int,barSize> sample1Bar = { 1, 0, 0, 0 };
+	int sample1BarPlayed = 0;
+
+	//test array for 1 bar of sample1 (sine wave)
+	array<int,barSize> sample2Bar = { 1, 0, 0, 0 };
 	int sample2BarPlayed = 0;
 
 	float bpm = 120.0f;
@@ -105,31 +127,22 @@ int main()
 	{
 		time_t currentTime = getMilliseconds() * 1000;
 		time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (bpmCmp + 1))));
-		sample2NextStep = sample2NextStep == 0 ? int(bpmNextBar) : sample2NextStep;
-//		if(shouldBe <= currentTime)
-//		{
-//			clear_screen();
-//			cout << startTime << endl << waitTime << endl;
-//			cout << "supposed to be: " << shouldBe << endl;
-//			cout << "really is: " << "\t" << currentTime << endl;
-//			cout << "difference: " << (shouldBe - currentTime) << endl;
-//			cout << "bpm: " << bpm << endl;
-//			wait = rand() % 12;
-//			sample1.stop();
-//			sample2.stop();
-//			float pitch = 0.0f + float(wait/3);
-//			sample1.setPitch(pitch);
-//			sample1.play();
-//			sample2.play();
-//			++bpmCmp;
-//		}
-		if(sample2NextStep <= currentTime)
+		sample1NextStep = sample1NextStep == 0 ? bpmNextBar : sample1NextStep;
+		if(time_t(sample1NextStep) <= currentTime)
 		{
 			clear_screen();
-			playSample2(startTime, beatTime, sample2NextStep, currentTime, bpm, bpmCmp, sample2, sample2Bar, sample2BarPlayed);
+			playSample(startTime, beatTime, sample1NextStep, currentTime, bpm, bpmCmp, sample1, sample1Bar, sample1BarPlayed, true);
+		}
+		sample2NextStep = sample2NextStep == 0 ? bpmNextBar : sample2NextStep;
+		if(time_t(sample2NextStep) <= currentTime)
+		{
+			clear_screen();
+			playSample(startTime, beatTime, sample2NextStep, currentTime, bpm, bpmCmp, sample2, sample2Bar, sample2BarPlayed);
 		}
 		if(bpmNextBar <= currentTime)
 		{
+			buildSampleBar(sample1Bar);
+			buildSampleBar(sample2Bar);
 			++bpmCmp;
 			if(bpmCmp >= 120)
 			{

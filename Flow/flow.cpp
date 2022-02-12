@@ -68,18 +68,21 @@ time_t getMilliseconds()
 }
 
 //fonction pour avancer dans la trame du sample2 et jouer ou pas le son
-void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int bpmCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false)
+void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int barCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false, bool linger = false)
 {
 	cout << "*****Sample*****" << endl;
 	cout << startTime << endl << beatTime << endl;
 	cout << "step: " << sampleBarPlayed << endl;
 	cout << "sampleNextStep: \t" << sampleNextStep << endl;
 	cout << "really is: " << "\t\t" << currentTime << endl;
-	cout << "bpm: " << bpm << ", bar: " << (bpmCmp + 1) << endl;
+	cout << "bpm: " << bpm << ", bar: " << (barCmp + 1) << endl;
 	if(pitch) sample.setPitch(0.0f + float((rand() % 501)/100));
+	if(!linger)
+		sample.stop();
 	if(sampleBar[sampleBarPlayed] == 1)
 	{
-		sample.stop();
+		if(!linger)
+			sample.stop();
 		sample.play();
 	}
 	++sampleBarPlayed;
@@ -101,52 +104,44 @@ int main()
 	time_t startTime = getMilliseconds();
 	srand(int(time(0)));
 
-	SoundBuffer buffer1;
-	buffer1 = bufferSample("Sine_wave_440.ogg");
-	Sound sample1;
-	sample1 = loadSample(buffer1);
-	time_t sample1NextStep = 0;
+	//sample variables //0: sine wave, 1: kick drum
+	const size_t sampleNumbers = 2;
+	array<SoundBuffer, sampleNumbers> buffers = { bufferSample("Sine_wave_440.ogg"), bufferSample("kick-hip-hop-punchy-3.wav") };
+	array<Sound, sampleNumbers> samples = { loadSample(buffers[0]), loadSample(buffers[1]) };
+	array<time_t, sampleNumbers> nextSteps = { 0 , 0 };
+	//array of array for sampleBars
+	array<int, sampleNumbers> sampleBarsPlayed = { 0, 0 };
 
-	SoundBuffer buffer2;
-	buffer2 = bufferSample("kick-hip-hop-punchy-3.wav");
-	Sound sample2;
-	sample2 = loadSample(buffer2);
-	time_t sample2NextStep = 0;
-
-	//test array for 1 bar of sample1 (sine wave)
 	array<int,barSize> sample1Bar = { 1, 0, 0, 0 };
-	int sample1BarPlayed = 0;
 
-	//test array for 1 bar of sample2 (kick drum)
 	array<int,barSize> sample2Bar = { 1, 0, 0, 0 };
-	int sample2BarPlayed = 0;
 
 	float bpm = 120.0f;
 	int beatTime = int((secsmins / bpm) * 1000000.f);
 
 	int wait;
-	int bpmCmp = 0;
+	int barCmp = 0;
 	for(;;)
 	{
 		time_t currentTime = getMilliseconds() * 1000;
-		time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (bpmCmp + 1))));
+		time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (barCmp + 1))));
 
 		//nettoyer l'écran si un sample joue
-		if(time_t(sample1NextStep) <= currentTime || time_t(sample2NextStep) <= currentTime)
+		if(time_t(nextSteps[0]) <= currentTime || time_t(nextSteps[1]) <= currentTime)
 			clear_screen();
 
 		//jouer le sample sine wave si c'est son temps
-		sample1NextStep = sample1NextStep == 0 ? bpmNextBar : sample1NextStep;
-		if(time_t(sample1NextStep) <= currentTime)
+		nextSteps[0] = nextSteps[0] == 0 ? bpmNextBar : nextSteps[0];
+		if(time_t(nextSteps[0]) <= currentTime)
 		{
-			playSample(startTime, beatTime, sample1NextStep, currentTime, bpm, bpmCmp, sample1, sample1Bar, sample1BarPlayed, true);
+			playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], true, (rand() % 2 == 0 ? false : true));
 		}
 
 		//jouer le sample kick drum si c'est son temps
-		sample2NextStep = sample2NextStep == 0 ? bpmNextBar : sample2NextStep;
-		if(time_t(sample2NextStep) <= currentTime)
+		nextSteps[1] = nextSteps[1] == 0 ? bpmNextBar : nextSteps[1];
+		if(time_t(nextSteps[1]) <= currentTime)
 		{
-			playSample(startTime, beatTime, sample2NextStep, currentTime, bpm, bpmCmp, sample2, sample2Bar, sample2BarPlayed);
+			playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], true);
 		}
 
 		//compteur de bar et reconstruction des samples bar
@@ -154,10 +149,10 @@ int main()
 		{
 			buildSampleBar(sample1Bar);
 			buildSampleBar(sample2Bar);
-			++bpmCmp;
-			if(bpmCmp >= 120)
+			++barCmp;
+			if(barCmp >= 120)
 			{
-				cout << "120 beats: " << (currentTime - (startTime * 1000)) << endl;
+				cout << "120 bars: " << (currentTime - (startTime * 1000)) << endl;
 				cin >> wait;
 			}
 		}

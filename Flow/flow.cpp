@@ -99,6 +99,19 @@ void buildSampleBar(array<int,barSize>& sampleBar)
 	}
 }
 
+//systeme de comportement des sample bars, cohésion a court terme
+void sampleBehaviour()
+{
+	//la succession des notes dans une mesure devrait etre controlée pour éviter un capharnaum total
+	//les notes jouées devraient aussi avoir un minimum de cohésion entre les différents samples.
+
+	//kick drum behaviour: beat repetitif simple le meme beat se repete, 1-1-1-1 (4 bars) DEFAULT
+	//						beat repetitif double alternants, 1-2-1-2
+	//						beat repetitif double successifs, 1-1-2-2 (4 bars), 1-1-1-1-2-2-2-2 (8 bars)
+	//le pitch du kick drum n'est pas nécéssaire, le volume pour représenter l'intensité pourrait l'être
+
+}
+
 int main()
 {
 	time_t startTime = getMilliseconds();
@@ -111,6 +124,7 @@ int main()
 	array<time_t, sampleNumbers> nextSteps = { 0 , 0 };
 	//array of array for sampleBars
 	array<int, sampleNumbers> sampleBarsPlayed = { 0, 0 };
+	array<string,sampleNumbers> sampleBehaviours = { "default", "default" };
 
 	array<int,barSize> sample1Bar = { 1, 0, 0, 0 };
 

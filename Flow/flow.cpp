@@ -113,11 +113,11 @@ int main()
 	sample2 = loadSample(buffer2);
 	time_t sample2NextStep = 0;
 
-	//test array for 1 bar of sample2 (kick drum)
+	//test array for 1 bar of sample1 (sine wave)
 	array<int,barSize> sample1Bar = { 1, 0, 0, 0 };
 	int sample1BarPlayed = 0;
 
-	//test array for 1 bar of sample1 (sine wave)
+	//test array for 1 bar of sample2 (kick drum)
 	array<int,barSize> sample2Bar = { 1, 0, 0, 0 };
 	int sample2BarPlayed = 0;
 
@@ -130,18 +130,26 @@ int main()
 	{
 		time_t currentTime = getMilliseconds() * 1000;
 		time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (bpmCmp + 1))));
+
+		//nettoyer l'écran si un sample joue
+		if(time_t(sample1NextStep) <= currentTime || time_t(sample2NextStep) <= currentTime)
+			clear_screen();
+
+		//jouer le sample sine wave si c'est son temps
 		sample1NextStep = sample1NextStep == 0 ? bpmNextBar : sample1NextStep;
 		if(time_t(sample1NextStep) <= currentTime)
 		{
-			clear_screen();
 			playSample(startTime, beatTime, sample1NextStep, currentTime, bpm, bpmCmp, sample1, sample1Bar, sample1BarPlayed, true);
 		}
+
+		//jouer le sample kick drum si c'est son temps
 		sample2NextStep = sample2NextStep == 0 ? bpmNextBar : sample2NextStep;
 		if(time_t(sample2NextStep) <= currentTime)
 		{
-			clear_screen();
 			playSample(startTime, beatTime, sample2NextStep, currentTime, bpm, bpmCmp, sample2, sample2Bar, sample2BarPlayed);
 		}
+
+		//compteur de bar et reconstruction des samples bar
 		if(bpmNextBar <= currentTime)
 		{
 			buildSampleBar(sample1Bar);

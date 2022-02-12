@@ -13,6 +13,8 @@
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
+#include <array>
+
 //test
 using namespace std;
 using namespace sf;
@@ -39,6 +41,7 @@ SoundBuffer bufferSample(string sample)
 	string soundfolder;
 #if defined(_WIN32) || defined(_WIN64)
 	soundfolder = "../../Sounds/";
+	//soundfolder = ""; //need this to compile a .exe and sounds need to be in the .exe folder
 #else
     // Assume POSIX
 	soundfolder = "../Sounds/";

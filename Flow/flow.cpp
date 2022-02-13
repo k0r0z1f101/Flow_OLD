@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #endif
 
+#include "Code_Utilities.h"
 #include <chrono>
 #include <ctime>
 #include <cstdlib>
@@ -19,10 +20,12 @@
 using namespace std;
 using namespace sf;
 using namespace chrono;
+using namespace BdB;
 
 //globales
 const float secsmins = 60.0f;
 const int barSize = 4;
+const int measureSize = 4;
 
 //fonction pour nettoyer l'écran cross-compatibility
 void clear_screen()
@@ -64,18 +67,20 @@ Sound loadSample(SoundBuffer& buffer)
 //fonction pour avoir le temps en millisecondes depuis Epoch
 time_t getMilliseconds()
 {
-	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	return duration_cast<chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
 //fonction pour avancer dans la trame du sample2 et jouer ou pas le son
-void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int barCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false, bool linger = false)
+void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int measureCmp, int barCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false, bool linger = false)
 {
-	cout << "*****Sample*****" << endl;
-	cout << startTime << endl << beatTime << endl;
+	string sampleBeat;
+	for(int i = 0; i < 4; ++i)
+	{
+		sampleBeat += to_string(sampleBar[i]) + " ";
+	}
+	cout << "*****Sample***** " << sampleBeat << endl;
 	cout << "step: " << sampleBarPlayed << endl;
-	cout << "sampleNextStep: \t" << sampleNextStep << endl;
-	cout << "really is: " << "\t\t" << currentTime << endl;
-	cout << "bpm: " << bpm << ", bar: " << (barCmp + 1) << endl;
+	cout << "sampleNextStep: " << sampleNextStep << endl;
 	if(pitch) sample.setPitch(0.0f + float((rand() % 501)/100));
 	if(!linger)
 		sample.stop();
@@ -91,25 +96,36 @@ void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t c
 }
 
 //fonction de départ pour randomiser un bar de sample
-void buildSampleBar(array<int,barSize>& sampleBar)
+void buildSampleBar(array<int,barSize>& sampleBar, string behaviour = "default")
 {
-	for(int i = 0;i < barSize;++i)
+	if(behaviour == "default")
 	{
-		sampleBar[i] = rand() % 2;
+		int notesLeft = 2;
+		for(int i = 0; i < barSize; ++i)
+		{
+			sampleBar[i] = notesLeft > 0 ? rand() % 2 : 0;
+			sampleBar[i] = notesLeft == 2 && i == (barSize - 1) ? 1 : sampleBar[i];
+			notesLeft = sampleBar[i] != 0 ? notesLeft - 1 : notesLeft;
+		}
 	}
 }
 
 //systeme de comportement des sample bars, cohésion a court terme
-void sampleBehaviour()
+void sampleBehaviour(array<int,barSize>& sampleBar)
 {
 	//la succession des notes dans une mesure devrait etre controlée pour éviter un capharnaum total
 	//les notes jouées devraient aussi avoir un minimum de cohésion entre les différents samples.
 
-	//kick drum behaviour: beat repetitif simple le meme beat se repete, 1-1-1-1 (4 bars) DEFAULT
-	//						beat repetitif double alternants, 1-2-1-2
-	//						beat repetitif double successifs, 1-1-2-2 (4 bars), 1-1-1-1-2-2-2-2 (8 bars)
+	//KICK DRUM BEHAVIOUR
+	//IN MESURE
+	//		beat repetitif simple le meme beat se repete, 1-1-1-1 (4 bars) DEFAULT
+	//		beat repetitif double alternants, 1-2-1-2
+	//		beat repetitif double successifs, 1-1-2-2 (4 bars), 1-1-1-1-2-2-2-2 (8 bars)
+	//IN BAR
+	//
 	//le pitch du kick drum n'est pas nécéssaire, le volume pour représenter l'intensité pourrait l'être
 
+	buildSampleBar(sampleBar);
 }
 
 int main()
@@ -130,39 +146,46 @@ int main()
 
 	array<int,barSize> sample2Bar = { 1, 0, 0, 0 };
 
-	float bpm = 120.0f;
+	float bpm = 60.0f;
 	int beatTime = int((secsmins / bpm) * 1000000.f);
 
 	int wait;
 	int barCmp = 0;
+	int measureCmp = 0;
 	for(;;)
 	{
 		time_t currentTime = getMilliseconds() * 1000;
 		time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (barCmp + 1))));
+		time_t bpmNextMeasure = barCmp % measureSize == 0 ? time_t(((startTime * 1000) + ((beatTime * measureSize) * (measureCmp + 1)))) : bpmNextMeasure;
 
 		//nettoyer l'écran si un sample joue
 		if(time_t(nextSteps[0]) <= currentTime || time_t(nextSteps[1]) <= currentTime)
+		{
 			clear_screen();
+			cout << "started: \t" << startTime << ", bar time: " << beatTime << endl;
+			cout << "current time: " << "\t" << currentTime << endl;
+			cout << "bpm: " << bpm << ", measure: " << (measureCmp + 1) << ", bar: " << (barCmp + 1) << endl;
+		}
 
 		//jouer le sample sine wave si c'est son temps
 		nextSteps[0] = nextSteps[0] == 0 ? bpmNextBar : nextSteps[0];
 		if(time_t(nextSteps[0]) <= currentTime)
 		{
-			playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], true, (rand() % 2 == 0 ? false : true));
+			playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], true, (rand() % 2 == 0 ? false : true));
 		}
 
 		//jouer le sample kick drum si c'est son temps
 		nextSteps[1] = nextSteps[1] == 0 ? bpmNextBar : nextSteps[1];
 		if(time_t(nextSteps[1]) <= currentTime)
 		{
-			playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], true);
+			playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], false);
 		}
 
-		//compteur de bar et reconstruction des samples bar
+		//compteur de bar
 		if(bpmNextBar <= currentTime)
 		{
-			buildSampleBar(sample1Bar);
-			buildSampleBar(sample2Bar);
+			sampleBehaviour(sample1Bar);
+//			sampleBehaviour(sample2Bar);
 			++barCmp;
 			if(barCmp >= 120)
 			{
@@ -170,6 +193,15 @@ int main()
 				cin >> wait;
 			}
 		}
+
+		//compteur de mesures et reconstruction des samples bar
+		if(bpmNextMeasure <= currentTime)
+		{
+//			sampleBehaviour(sample1Bar);
+			sampleBehaviour(sample2Bar);
+			++measureCmp;
+		}
+		//waitKeyToPress();
 	}
 
     return 0;

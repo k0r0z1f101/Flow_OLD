@@ -60,7 +60,6 @@ Sound loadSample(SoundBuffer& buffer)
 {
 	Sound sample;
 	sample.setBuffer(buffer);
-	sample.setVolume(5.f);
 	return sample;
 }
 
@@ -71,23 +70,24 @@ time_t getMilliseconds()
 }
 
 //fonction pour avancer dans la trame du sample2 et jouer ou pas le son
-void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int measureCmp, int barCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false, bool linger = false)
+void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int measureCmp, int barCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false, bool linger = false, float volume = 5.f)
 {
 	string sampleBeat;
-	for(int i = 0; i < 4; ++i)
+	for(int i = 0; i < barSize; ++i)
 	{
 		sampleBeat += to_string(sampleBar[i]) + " ";
 	}
 	cout << "*****Sample***** " << sampleBeat << endl;
 	cout << "step: " << sampleBarPlayed << endl;
 	cout << "sampleNextStep: " << sampleNextStep << endl;
-	if(pitch) sample.setPitch(0.0f + float((rand() % 501)/100));
-	if(!linger)
-		sample.stop();
+//	if(!linger)
+//		sample.stop();
 	if(sampleBar[sampleBarPlayed] == 1)
 	{
-		if(!linger)
-			sample.stop();
+		if(pitch) sample.setPitch(0.5f + float((rand() % 501)/100));
+		sample.setVolume(volume);
+//		if(linger)
+//			sample.stop();
 		sample.play();
 	}
 	++sampleBarPlayed;
@@ -103,7 +103,7 @@ void buildSampleBar(array<int,barSize>& sampleBar, string behaviour = "default")
 		int notesLeft = 2;
 		for(int i = 0; i < barSize; ++i)
 		{
-			sampleBar[i] = notesLeft > 0 ? rand() % 2 : 0;
+			sampleBar[i] = notesLeft > 0 ? rand() % 2 : rand() % 2;
 			sampleBar[i] = notesLeft == 2 && i == (barSize - 1) ? 1 : sampleBar[i];
 			notesLeft = sampleBar[i] != 0 ? notesLeft - 1 : notesLeft;
 		}
@@ -134,17 +134,20 @@ int main()
 	srand(int(time(0)));
 
 	//sample variables //0: sine wave, 1: kick drum
-	const size_t sampleNumbers = 2;
-	array<SoundBuffer, sampleNumbers> buffers = { bufferSample("Sine_wave_440.ogg"), bufferSample("kick-hip-hop-punchy-3.wav") };
-	array<Sound, sampleNumbers> samples = { loadSample(buffers[0]), loadSample(buffers[1]) };
-	array<time_t, sampleNumbers> nextSteps = { 0 , 0 };
+	const size_t sampleNumbers = 3;
+	//array<SoundBuffer, sampleNumbers> buffers = { bufferSample("Sine_wave_440.ogg"), bufferSample("kick-hip-hop-punchy-3.wav") };
+	array<SoundBuffer, sampleNumbers> buffers = { bufferSample("ahh-choir-female-vocal-high_C_minor.wav"), bufferSample("juicy-kick-power-hit.wav"), bufferSample("kick-hip-hop-punchy-3.wav") };
+	array<Sound, sampleNumbers> samples = { loadSample(buffers[0]), loadSample(buffers[1]), loadSample(buffers[2]) };
+	array<time_t, sampleNumbers> nextSteps = { 0, 0, 0 };
 	//array of array for sampleBars
-	array<int, sampleNumbers> sampleBarsPlayed = { 0, 0 };
-	array<string,sampleNumbers> sampleBehaviours = { "default", "default" };
+	array<int, sampleNumbers> sampleBarsPlayed = { 0, 0, 0 };
+	array<string,sampleNumbers> sampleBehaviours = { "default", "default", "default" };
 
 	array<int,barSize> sample1Bar = { 1, 0, 0, 0 };
 
 	array<int,barSize> sample2Bar = { 1, 0, 0, 0 };
+
+	array<int,barSize> sample3Bar = { 1, 0, 0, 0 };
 
 	float bpm = 60.0f;
 	int beatTime = int((secsmins / bpm) * 1000000.f);
@@ -159,7 +162,7 @@ int main()
 		time_t bpmNextMeasure = barCmp % measureSize == 0 ? time_t(((startTime * 1000) + ((beatTime * measureSize) * (measureCmp + 1)))) : bpmNextMeasure;
 
 		//nettoyer l'écran si un sample joue
-		if(time_t(nextSteps[0]) <= currentTime || time_t(nextSteps[1]) <= currentTime)
+		if(time_t(nextSteps[0]) <= currentTime || time_t(nextSteps[1]) <= currentTime || time_t(nextSteps[2]) <= currentTime)
 		{
 			clear_screen();
 			cout << "started: \t" << startTime << ", bar time: " << beatTime << endl;
@@ -167,18 +170,25 @@ int main()
 			cout << "bpm: " << bpm << ", measure: " << (measureCmp + 1) << ", bar: " << (barCmp + 1) << endl;
 		}
 
-		//jouer le sample sine wave si c'est son temps
+		//jouer le sample 1 si c'est son temps
 		nextSteps[0] = nextSteps[0] == 0 ? bpmNextBar : nextSteps[0];
 		if(time_t(nextSteps[0]) <= currentTime)
 		{
-			playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], true, (rand() % 2 == 0 ? false : true));
+			playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], true, true);
 		}
 
-		//jouer le sample kick drum si c'est son temps
+		//jouer le sample 2 si c'est son temps
 		nextSteps[1] = nextSteps[1] == 0 ? bpmNextBar : nextSteps[1];
 		if(time_t(nextSteps[1]) <= currentTime)
 		{
-			playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], false);
+			playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], false, false, 10.f);
+		}
+
+		//jouer le sample 3 si c'est son temps
+		nextSteps[2] = nextSteps[2] == 0 ? bpmNextBar : nextSteps[2];
+		if(time_t(nextSteps[2]) <= currentTime)
+		{
+			playSample(startTime, beatTime, nextSteps[2], currentTime, bpm, measureCmp, barCmp, samples[2], sample3Bar, sampleBarsPlayed[2], false, false, 8.f);
 		}
 
 		//compteur de bar
@@ -199,6 +209,7 @@ int main()
 		{
 //			sampleBehaviour(sample1Bar);
 			sampleBehaviour(sample2Bar);
+			sampleBehaviour(sample3Bar);
 			++measureCmp;
 		}
 		//waitKeyToPress();

@@ -155,11 +155,12 @@ int main()
 	int wait;
 	int barCmp = 0;
 	int measureCmp = 0;
+	time_t bpmNextMeasure;
 	for(;;)
 	{
 		time_t currentTime = getMilliseconds() * 1000;
 		time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (barCmp + 1))));
-		time_t bpmNextMeasure = barCmp % measureSize == 0 ? time_t(((startTime * 1000) + ((beatTime * measureSize) * (measureCmp + 1)))) : bpmNextMeasure;
+		bpmNextMeasure = barCmp % measureSize == 0 ? time_t(((startTime * 1000) + ((beatTime * measureSize) * (measureCmp + 1)))) : bpmNextMeasure;
 
 		//nettoyer l'écran si un sample joue
 		if(time_t(nextSteps[0]) <= currentTime || time_t(nextSteps[1]) <= currentTime || time_t(nextSteps[2]) <= currentTime)

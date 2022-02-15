@@ -1,5 +1,54 @@
 #include "flow.h"
 
+//globales pour le talker
+const int windowWidth = 800;
+const int windowHeight = 600;
+
+
+//le talker est un cercle animé représentant la créature qui va nous guider dans le jeu
+class Talker
+{
+private:
+	float happy = 0.f;
+	float scared = 0.f;
+	float angry = 0.f;
+	float sad = 0.f;
+
+public:
+	float getHappy()
+	{
+		return happy;
+	}
+	float getScared()
+	{
+		return scared;
+	}
+	float getAngry()
+	{
+		return angry;
+	}
+	float getSad()
+	{
+		return sad;
+	}
+	void changeHappy(int points)
+	{
+		happy += points;
+	}
+	void changeScared(int points)
+	{
+		scared += points;
+	}
+	void changeAngry(int points)
+	{
+		angry += points;
+	}
+	void changeSad(int points)
+	{
+		sad += points;
+	}
+};
+
 int main()
 {
 	time_t startTime = getMilliseconds();
@@ -16,8 +65,6 @@ int main()
 	array<string,sampleNumbers> sampleBehaviours = { "default", "default", "default" };
 	vector<array<int, barSize>> sampleBars = { { 1, 0, 0, 0 }, { 1, 0, 0, 0 }, { 1, 0, 0, 0 } }; //test
 
-	char a;
-
 	array<int,barSize> sample1Bar = { 1, 0, 0, 0 };
 
 	array<int,barSize> sample2Bar = { 1, 0, 0, 0 };
@@ -31,65 +78,112 @@ int main()
 	int barCmp = 0;
 	int measureCmp = 0;
 	time_t bpmNextMeasure;
-	for(;;)
+
+	//instanciation d'un talker et affichage dans une fenêtre
+	Talker talkie;
+	// create the window
+	RenderWindow talkieWindow(VideoMode(windowWidth, windowHeight), "Talkie");
+
+	// run the program as long as the window is open
+	while (talkieWindow.isOpen())
 	{
-		time_t currentTime = getMilliseconds() * 1000;
-		time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (barCmp + 1))));
-		bpmNextMeasure = barCmp % measureSize == 0 ? time_t(((startTime * 1000) + ((beatTime * measureSize) * (measureCmp + 1)))) : bpmNextMeasure;
-
-		//nettoyer l'écran si un sample joue
-		if(time_t(nextSteps[0]) <= currentTime || time_t(nextSteps[1]) <= currentTime || time_t(nextSteps[2]) <= currentTime)
+		// check all the window's events that were triggered since the last iteration of the loop
+		sf::Event event;
+		while (talkieWindow.pollEvent(event))
 		{
-			clear_screen();
-			cout << "started: \t" << startTime << ", bar time: " << beatTime << endl;
-			cout << "current time: " << "\t" << currentTime << endl;
-			cout << "bpm: " << bpm << ", measure: " << (measureCmp + 1) << ", bar: " << (barCmp + 1) << endl;
+			// "close requested" event: we close the window
+			if (event.type == sf::Event::Closed)
+				talkieWindow.close();
 		}
 
-		//jouer le sample 1 si c'est son temps
-		nextSteps[0] = nextSteps[0] == 0 ? bpmNextBar : nextSteps[0];
-		if(time_t(nextSteps[0]) <= currentTime)
-		{
-			playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], true, true);
-		}
+		// clear the window with black color
+		talkieWindow.clear(sf::Color::Black);
 
-		//jouer le sample 2 si c'est son temps
-		nextSteps[1] = nextSteps[1] == 0 ? bpmNextBar : nextSteps[1];
-		if(time_t(nextSteps[1]) <= currentTime)
-		{
-			playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], false, false, 10.f);
-		}
+		// draw everything here...
+		// window.draw(...);
+		float talkerRadius = 50.f;
+		CircleShape shape(talkerRadius);
+		// set the shape color to green
+		shape.setFillColor(sf::Color(100, 250, 50));
+		shape.setPosition(windowWidth / 2 - talkerRadius, windowHeight - talkerRadius * 2);
 
-		//jouer le sample 3 si c'est son temps
-		nextSteps[2] = nextSteps[2] == 0 ? bpmNextBar : nextSteps[2];
-		if(time_t(nextSteps[2]) <= currentTime)
-		{
-			playSample(startTime, beatTime, nextSteps[2], currentTime, bpm, measureCmp, barCmp, samples[2], sample3Bar, sampleBarsPlayed[2], false, false, 8.f);
-		}
+		//
+		//		for(;;)
+		//		{
+				time_t currentTime = getMilliseconds() * 1000;
+				time_t bpmNextBar = time_t(((startTime * 1000) + (beatTime * (barCmp + 1))));
+				bpmNextMeasure = barCmp % measureSize == 0 ? time_t(((startTime * 1000) + ((beatTime * measureSize) * (measureCmp + 1)))) : bpmNextMeasure;
 
-		//compteur de bar
-		if(bpmNextBar <= currentTime)
-		{
-			sampleBehaviour(sample1Bar);
-//			sampleBehaviour(sample2Bar);
-			++barCmp;
-			if(barCmp >= 120)
-			{
-				cout << "120 bars: " << (currentTime - (startTime * 1000)) << endl;
-				cin >> wait;
-			}
-		}
+				//nettoyer l'écran si un sample joue
+				if(time_t(nextSteps[0]) <= currentTime || time_t(nextSteps[1]) <= currentTime || time_t(nextSteps[2]) <= currentTime)
+				{
+					clear_screen();
+					cout << "started: \t" << startTime << ", bar time: " << beatTime << endl;
+					cout << "current time: " << "\t" << currentTime << endl;
+					cout << "bpm: " << bpm << ", measure: " << (measureCmp + 1) << ", bar: " << (barCmp + 1) << endl;
+				}
 
-		//compteur de mesures et reconstruction des samples bar
-		if(bpmNextMeasure <= currentTime)
+				//jouer le sample 1 si c'est son temps
+				nextSteps[0] = nextSteps[0] == 0 ? bpmNextBar : nextSteps[0];
+				if(time_t(nextSteps[0]) <= currentTime)
+				{
+					playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], shape, true, true);
+				}
+
+				//jouer le sample 2 si c'est son temps
+				nextSteps[1] = nextSteps[1] == 0 ? bpmNextBar : nextSteps[1];
+				if(time_t(nextSteps[1]) <= currentTime)
+				{
+					playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], shape, false, false, 10.f);
+				}
+
+				//jouer le sample 3 si c'est son temps
+				nextSteps[2] = nextSteps[2] == 0 ? bpmNextBar : nextSteps[2];
+				if(time_t(nextSteps[2]) <= currentTime)
+				{
+					playSample(startTime, beatTime, nextSteps[2], currentTime, bpm, measureCmp, barCmp, samples[2], sample3Bar, sampleBarsPlayed[2], shape, false, false, 8.f);
+				}
+
+				//compteur de bar
+				if(bpmNextBar <= currentTime)
+				{
+					sampleBehaviour(sample1Bar);
+		//			sampleBehaviour(sample2Bar);
+					++barCmp;
+					if(barCmp >= 120)
+					{
+						cout << "120 bars: " << (currentTime - (startTime * 1000)) << endl;
+						cin >> wait;
+					}
+				}
+
+				//compteur de mesures et reconstruction des samples bar
+				if(bpmNextMeasure <= currentTime)
+				{
+		//			sampleBehaviour(sample1Bar);
+					sampleBehaviour(sample2Bar);
+					sampleBehaviour(sample3Bar);
+					++measureCmp;
+				}
+				//waitKeyToPress();
+
+		//	}
+
+
+		if(sampleBarsPlayed[1] == 1)
 		{
-//			sampleBehaviour(sample1Bar);
-			sampleBehaviour(sample2Bar);
-			sampleBehaviour(sample3Bar);
-			++measureCmp;
+			shape.setScale(1.2f,1.2f);
+			shape.setPosition(windowWidth / 2 - talkerRadius * 1.2, windowHeight - talkerRadius * 1.2 * 2);
 		}
-		//waitKeyToPress();
+		talkieWindow.draw(shape);
+
+		// end the current frame
+		talkieWindow.display();
+
+
+
 	}
+
 
     return 0;
 }

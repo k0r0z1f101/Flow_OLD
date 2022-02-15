@@ -2,10 +2,14 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <SFML/Audio.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
 #include <Windows.h>
 #include "conio.h"
 #else
 #include <SFML/Audio.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
 #include <unistd.h>
 #include <ncurses.h>
 #include <sys/time.h>
@@ -71,8 +75,8 @@ time_t getMilliseconds()
 	return duration_cast<chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-//fonction pour avancer dans la trame du sample2 et jouer ou pas le son
-void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int measureCmp, int barCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, bool pitch = false, bool linger = false, float volume = 5.f)
+//fonction pour avancer dans la trame du sample et jouer ou pas le son
+void playSample(time_t startTime, int beatTime, time_t& sampleNextStep, time_t currentTime, float bpm, int measureCmp, int barCmp, Sound& sample, array<int,barSize> sampleBar,  int& sampleBarPlayed, CircleShape& shape, bool pitch = false, bool linger = false, float volume = 5.f)
 {
 	string sampleBeat;
 	for(int i = 0; i < barSize; ++i)

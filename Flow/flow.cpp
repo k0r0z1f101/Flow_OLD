@@ -49,6 +49,34 @@ public:
 	}
 };
 
+class Sample
+{
+private:
+	time_t nextStep = 0;
+	int sampleBarsPlayed = 0;
+	string sampleBehaviour = "default";
+	array<int, barSize> sampleBar = { 1, 0, 0, 0 };
+public:
+	SoundBuffer buffer;
+	Sound sample;
+	void initBuffer(string path)
+	{
+		buffer = bufferSample(path);
+	}
+	void initSound()
+	{
+		sample = loadSample(buffer);
+	}
+	SoundBuffer getBuffer()
+	{
+		return buffer;
+	}
+	Sound getSound()
+	{
+		return sample;
+	}
+};
+
 int main()
 {
 	time_t startTime = getMilliseconds();
@@ -70,6 +98,19 @@ int main()
 	array<int,barSize> sample2Bar = { 1, 0, 0, 0 };
 
 	array<int,barSize> sample3Bar = { 1, 0, 0, 0 };
+
+	//initialiser les samples et les buffers
+	Sample sineWave;
+	Sample kickDrum1;
+	Sample kickDrum2;
+	array<Sample, sampleNumbers> samplesObject = { sineWave, kickDrum1, kickDrum2 };
+
+	array<string, sampleNumbers> sampleNames = { "ahh-choir-female-vocal-high_C_minor.wav", "juicy-kick-power-hit.wav", "kick-hip-hop-punchy-3.wav" };
+	for(int i = 0; i < sampleNumbers; ++i)
+	{
+		samplesObject[i].initBuffer(sampleNames[i]);
+		samplesObject[i].initSound();
+	}
 
 	float bpm = 60.0f;
 	int beatTime = int((secsmins / bpm) * 1000000.f);
@@ -123,25 +164,30 @@ int main()
 					cout << "bpm: " << bpm << ", measure: " << (measureCmp + 1) << ", bar: " << (barCmp + 1) << endl;
 				}
 
+				//jouer les samples
+
 				//jouer le sample 1 si c'est son temps
 				nextSteps[0] = nextSteps[0] == 0 ? bpmNextBar : nextSteps[0];
 				if(time_t(nextSteps[0]) <= currentTime)
 				{
-					playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], shape, true, true);
+//					playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samples[0], sample1Bar, sampleBarsPlayed[0], shape, true, true);
+					playSample(startTime, beatTime, nextSteps[0], currentTime, bpm, measureCmp, barCmp, samplesObject[0].sample, sample1Bar, sampleBarsPlayed[0], shape, true, true);
 				}
 
-				//jouer le sample 2 si c'est son temps
+//				//jouer le sample 2 si c'est son temps
 				nextSteps[1] = nextSteps[1] == 0 ? bpmNextBar : nextSteps[1];
 				if(time_t(nextSteps[1]) <= currentTime)
 				{
-					playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], shape, false, false, 10.f);
+//					playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samples[1], sample2Bar, sampleBarsPlayed[1], shape, false, false, 10.f);
+					playSample(startTime, beatTime, nextSteps[1], currentTime, bpm, measureCmp, barCmp, samplesObject[1].sample, sample2Bar, sampleBarsPlayed[1], shape, true, true);
 				}
-
-				//jouer le sample 3 si c'est son temps
+//
+//				//jouer le sample 3 si c'est son temps
 				nextSteps[2] = nextSteps[2] == 0 ? bpmNextBar : nextSteps[2];
 				if(time_t(nextSteps[2]) <= currentTime)
 				{
 					playSample(startTime, beatTime, nextSteps[2], currentTime, bpm, measureCmp, barCmp, samples[2], sample3Bar, sampleBarsPlayed[2], shape, false, false, 8.f);
+					playSample(startTime, beatTime, nextSteps[2], currentTime, bpm, measureCmp, barCmp, samplesObject[2].sample, sample3Bar, sampleBarsPlayed[2], shape, true, true);
 				}
 
 				//compteur de bar
